@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site-to-Site Distance Calculator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+<style>
+    #data-file { opacity: 0; cursor: pointer; z-index: 50; }
+    #fileText { border-right: none; }
+    .sticky-header th { position: sticky; top: 0; z-index: 10; background: #f3f4f6; }
+
+    /* Hide guide page initially */
+    #guide-page { display: none; background-color: #f8f9fa; min-height: 100vh; padding: 40px; }
+
+    body { margin:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+</style>
+</head>
+<body class="bg-gray-50 py-10">
+
+<div id="calculator-page" class="max-w-4xl w-full mx-auto bg-white shadow-2xl p-8 rounded-xl border border-gray-100">
+
+<h2 class="text-3xl font-bold mb-8 text-left text-gray-800">
+Site-to-Site Distance Calculator
+</h2>
+<hr class="mb-8 border-gray-200">
+
+<div id="status-message" class="p-3 mb-6 rounded-lg hidden transition-all duration-300" role="alert"></div>
+
+<div class="mb-8">
+    <label class="font-semibold block mb-3 text-lg text-gray-700">1. Import Site Location File (CSV/Text)</label>
+    <form class="w-full">
+        <div id="fileWrapper" class="relative w-full h-[50px] cursor-pointer">
+            <div id="fileText" class="absolute top-0 left-0 bg-white text-gray-500 text-base px-4 h-full leading-[50px] rounded-l-md w-[calc(100%-100px)] z-20 font-light overflow-hidden border border-gray-300">
+                Select your file!
+            </div>
+            <div id="uploadDiv" class="absolute top-0 right-0 h-full px-5 leading-[50px] uppercase font-bold text-white rounded-r-md text-sm z-30 bg-gradient-to-r from-[#24C6DC] to-[#514A9D] transition-all hover:opacity-90">
+                Upload
+            </div>
+            <input id="data-file" type="file" accept=".csv, .txt" class="absolute inset-0 w-full h-full">
+        </div>
+    </form>
+</div>
+
+<div class="mb-8">
+<h3 class="text-xl font-semibold mb-4 text-gray-700">2. Configuration</h3>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+    <div>
+        <label class="text-sm font-medium text-gray-600">Site Column</label>
+        <select id="cboSite" class="w-full border border-gray-300 p-2 rounded-lg mt-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled>
+            <option value="">Select</option>
+        </select>
+    </div>
+    <div>
+        <label class="text-sm font-medium text-gray-600">Longitude Column</label>
+        <select id="cboLon" class="w-full border border-gray-300 p-2 rounded-lg mt-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled>
+            <option value="">Select</option>
+        </select>
+    </div>
+    <div>
+        <label class="text-sm font-medium text-gray-600">Latitude Column</label>
+        <select id="cboLat" class="w-full border border-gray-300 p-2 rounded-lg mt-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled>
+            <option value="">Select</option>
+        </select>
+    </div>
+    <div>
+        <label class="text-sm font-medium text-gray-600">Nearest Sites (N)</label>
+        <input type="number" id="nearest-count" value="3" min="1" class="w-full border border-gray-300 p-2 rounded-lg mt-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 3">
+    </div>
+</div>
+</div>
+
+<div class="text-left mb-10">
+<button id="process-button" class="bg-green-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition duration-150 disabled:opacity-50" disabled>
+<i class="fas fa-calculator mr-2"></i> Process & Export KML
+</button>
+</div>
+
+<hr class="mb-8 border-gray-200">
+
+<div id="results-container" class="mb-10 hidden">
+<h3 class="text-xl font-semibold mb-4 text-gray-700">Results Table</h3>
+<div class="border border-gray-300 rounded-lg overflow-auto max-h-96 shadow-inner">
+    <table id="results-table" class="min-w-full text-sm">
+        <thead class="sticky-header"><tr></tr></thead>
+        <tbody></tbody>
+    </table>
+</div>
+</div>
+
+<div class="max-w-4xl w-full mx-auto mt-8">
+    <footer class="bg-white text-black text-center p-4 rounded-b-lg border-t border-gray-200">
+        <section id="developer-info" class="text-sm font-bold">
+            <a href="https://shorturl.at/iO1Ib" target="_blank" class="hover:text-indigo-500 transition duration-150">
+                Developed By - Soe Moe Tun
+            </a>
+            <span class="mx-2">|</span>
+            <a href="#" id="show-guide" class="hover:text-indigo-500 transition duration-150">
+                Tools Guide Line
+            </a>
+        </section>
+    </footer>
+</div>
+</div>
+
+<div id="guide-page" style="display:none;">
+    <div class="max-w-4xl w-full mx-auto bg-white p-8 rounded-xl shadow-md">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold text-blue-600">
+                Site-to-Site Distance Calculator – User Guide
+            </h1>
+            <button id="back-to-calculator" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                ← Back to Calculator
+            </button>
+        </div>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Overview</h2>
+        <ul class="list-disc pl-5 mb-4">
+            <li>Generates a <strong>results table</strong> with nearest sites and distances.</li>
+            <li>Exports a <strong>KML file</strong> for visualization in Google Earth or other GIS tools.</li>
+        </ul>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Step 1: Prepare Your Data</h2>
+        <p>Supported file formats: <strong>CSV</strong> or <strong>TXT</strong>.</p>
+        <p>Required columns: Site ID / Name, Latitude, Longitude.</p>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Step 2: Upload Your File</h2>
+        <ul class="list-disc pl-5 mb-4">
+            <li>Click the <strong>Upload</strong> button or file area.</li>
+            <li>Select your CSV or TXT file.</li>
+            <li>Column selection will be enabled automatically.</li>
+        </ul>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Step 3: Map Columns</h2>
+        <table class="w-full border border-gray-300 mb-4">
+            <thead class="bg-blue-600 text-white">
+                <tr>
+                    <th class="p-2 border">Tool Field</th>
+                    <th class="p-2 border">Map To</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="border p-2">Site Column</td><td class="border p-2">Site ID / Name</td></tr>
+                <tr><td class="border p-2">Latitude Column</td><td class="border p-2">Latitude</td></tr>
+                <tr><td class="border p-2">Longitude Column</td><td class="border p-2">Longitude</td></tr>
+            </tbody>
+        </table>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Step 4: Set Nearest Sites Count</h2>
+        <p>Enter the number of nearest sites (<strong>N</strong>) for each site. Example: <strong>3</strong>.</p>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Step 5: Process & Export</h2>
+        <ul class="list-disc pl-5 mb-4">
+            <li>Click <strong>Process & Export KML</strong>.</li>
+            <li>Tool calculates distances using the <strong>Haversine formula</strong>.</li>
+            <li>Results table is displayed, and KML file is downloaded.</li>
+        </ul>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Step 6: View Results</h2>
+        <ul class="list-disc pl-5 mb-4">
+            <li>Results table shows nearest sites and distances (km).</li>
+            <li>KML file can be opened in Google Earth or GIS software.</li>
+        </ul>
+
+        <h2 class="text-lg font-semibold mt-6 mb-2 border-b border-dashed pb-1">Tips & Best Practices</h2>
+        <ul class="list-disc pl-5 mb-4">
+            <li>Ensure coordinates are valid numbers.</li>
+            <li>Keep headers consistent in CSV/TXT files.</li>
+            <li>For large datasets (>5000 sites), processing may be slower.</li>
+            <li>Use KML file in Google Earth or compatible GIS software.</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Element References ---
+    const fileInput = document.getElementById('data-file');
+    const fileText = document.getElementById('fileText');
+    const nearestCountInput = document.getElementById('nearest-count');
+    const processButton = document.getElementById('process-button');
+    const statusMessage = document.getElementById('status-message');
+    const resultsContainer = document.getElementById('results-container');
+    const resultsTableBody = document.getElementById('results-table').querySelector('tbody');
+    const resultsTableHeaderRow = document.getElementById('results-table').querySelector('thead tr');
+    const cboSite = document.getElementById('cboSite');
+    const cboLat = document.getElementById('cboLat');
+    const cboLon = document.getElementById('cboLon');
+    const uploadDiv = document.getElementById('uploadDiv'); // Added for visual click handler
+
+    let siteData = [];
+    let currentHeaders = [];
+
+    // --- Core Helper Functions ---
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const toRad = a => a * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    /**
+     * FIX: Dynamic Delimiter Detection for reliable CSV/TXT parsing.
+     */
+    function parseCSV(text) {
+        const lines = text.trim().split('\n').filter(l => l.trim().length > 0);
+        if (lines.length < 1) return [];
+
+        const firstLine = lines[0];
+        
+        // 1. Detect delimiter (prioritize common separators)
+        let delimiter = ','; // Default to comma
+        if (firstLine.includes('\t')) delimiter = '\t'; // Tab-separated
+        else if (firstLine.includes(';')) delimiter = ';'; // Semicolon-separated
+
+        // 2. Parse Headers
+        const headers = firstLine.split(delimiter).map(h => h.trim().replace(/"/g,''));
+        const data = [];
+
+        // 3. Parse Data Rows
+        for(let i = 1; i < lines.length; i++){
+            const values = lines[i].split(delimiter).map(v => v.trim().replace(/"/g,''));
+            
+            // Skip rows that don't match the header count (bad formatting)
+            if(values.length !== headers.length) continue; 
+            
+            const row = {};
+            headers.forEach((h, idx) => {
+                let val = values[idx];
+                const lH = h.toLowerCase();
+                
+                // Convert coordinates to numbers
+                if(lH.includes('lat') || lH.includes('lon') || lH.includes('long')) {
+                    row[h] = parseFloat(val);
+                } else {
+                    row[h] = val;
+                }
+            });
+            data.push(row);
+        }
+        return data;
+    }
+
+    // --- UI/Event Handlers ---
+
+    function updateStatus(msg,type='info'){
+        statusMessage.innerHTML=msg;
+        statusMessage.className='p-3 mb-6 rounded-lg transition-all duration-300';
+        // Ensure status message is visible
+        statusMessage.style.display = 'block'; 
+        switch(type){
+            case 'error': statusMessage.classList.add('bg-red-100','text-red-800'); break;
+            case 'success': statusMessage.classList.add('bg-green-100','text-green-800'); break;
+            default: statusMessage.classList.add('bg-yellow-100','text-yellow-800'); break;
+        }
+    }
+
+    function populateHeaderDropdowns(headers){
+        [cboSite,cboLat,cboLon].forEach(s=>{
+            s.innerHTML='<option value="">Select</option>';
+            headers.forEach(h=>{
+                const o=document.createElement('option'); o.value=h; o.textContent=h; s.appendChild(o);
+            });
+            s.disabled=false;
+        });
+        const autoSelect=(select,keywords)=>{
+            const found=headers.find(h=>keywords.some(k=>h.toLowerCase().includes(k)));
+            if(found) select.value=found;
+        };
+        autoSelect(cboSite,['site','id','name']);
+        autoSelect(cboLat,['lat','latitude']);
+        autoSelect(cboLon,['lon','long','longitude']);
+    }
+
+    // Connect visual upload button to hidden input
+    uploadDiv.addEventListener('click',()=>fileInput.click());
+
+    fileInput.addEventListener('change',(e)=>{
+        const file = e.target.files[0];
+        if(!file){
+            fileText.textContent='Select your file!';
+            processButton.disabled=true;
+            [cboSite,cboLat,cboLon].forEach(s=>{s.innerHTML='<option value="">Select</option>';s.disabled=true;});
+            return;
+        }
+        fileText.innerHTML=`<i class="fas fa-spinner fa-spin mr-2 text-indigo-600"></i> Reading ${file.name}...`;
+        const reader = new FileReader();
+        reader.onload=(ev)=>{
+            try{
+                let parsed;
+                const content = ev.target.result;
+                // Only handling CSV/TXT based on 'accept' attribute and file type.
+                if(file.name.toLowerCase().endsWith('.csv') || file.name.toLowerCase().endsWith('.txt')) {
+                    parsed=parseCSV(content);
+                } else {
+                    throw new Error("Unsupported file type.");
+                }
+
+                if(!Array.isArray(parsed) || parsed.length < 2) {
+                    throw new Error("File must contain at least 2 valid data rows (excluding header).");
+                }
+                
+                // Success
+                siteData=parsed; 
+                currentHeaders=Object.keys(siteData[0]);
+                populateHeaderDropdowns(currentHeaders);
+                updateStatus(`Data loaded successfully. **${siteData.length} sites** found. Map columns below.`, 'success');
+                processButton.disabled=false;
+                fileText.innerHTML=`<i class="fas fa-check-circle mr-2 text-green-600"></i> ${file.name}`;
+
+            }catch(err){
+                // Failure
+                updateStatus(`Error loading file: ${err.message}. Please check file format and delimiters.`, 'error');
+                processButton.disabled=true; siteData=[]; currentHeaders=[];
+                [cboSite,cboLat,cboLon].forEach(s=>{s.innerHTML='<option value="">Select</option>';s.disabled=true;});
+                fileText.textContent='Select your file!';
+            }
+        };
+        reader.onerror=()=>{updateStatus('Failed to read file.','error'); processButton.disabled=true; fileText.textContent='Select your file!';};
+        reader.readAsText(file);
+    });
+
+    // --- KML & Results (unchanged logic) ---
+    function escapeXML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
+    function generateKMLHeader(){return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Nearest Sites Report</name><Style id="siteStyle"><IconStyle><Icon><href>http://maps.google.com/mapfiles/kml/pal2/icon18.png</href></Icon><scale>1.0</scale></IconStyle><LabelStyle><scale>0.8</scale></LabelStyle></Style><Style id="lineStyle"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style>\n`;}
+    function generateKMLFooter(){return `</Document></kml>`;}
+    function generateKMLSitePlacemark(siteName, lat, lon, desc){const escapedDesc=escapeXML(desc).replace(/\n/g,'<br>'); return `<Placemark><name>${escapeXML(siteName)}</name><description><![CDATA[Site ID: ${escapeXML(siteName)}<br>Latitude: ${lat}<br>Longitude: ${lon}<br><br>${escapedDesc}]]></description><styleUrl>#siteStyle</styleUrl><Point><coordinates>${lon},${lat},0</coordinates></Point></Placemark>\n`;}
+    function generateKMLLineString(name1, lat1, lon1, name2, lat2, lon2, distance){return `<Placemark><name>Line: ${escapeXML(name1)} - ${escapeXML(name2)}</name><description><![CDATA[Distance: ${distance} km]]></description><styleUrl>#lineStyle</styleUrl><LineString><tessellate>1</tessellate><coordinates>${lon1},${lat1},0 ${lon2},${lat2},0</coordinates></LineString></Placemark>\n`;}
+    function downloadKML(kmlText){const blob=new Blob([kmlText],{type:'application/vnd.google-earth.kml+xml'});const url=URL.createObjectURL(blob);const a=document.createElement('a'); a.href=url; a.download='Nearest_Sites_Report.kml'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);}
+
+    function displayResultsTable(results,N){
+        resultsTableHeaderRow.innerHTML=''; resultsTableBody.innerHTML=''; resultsContainer.classList.remove('hidden');
+        let headerHTML='<th class="border px-4 py-3">Site ID</th>';
+        for(let n=1;n<=N;n++){ headerHTML+=`<th class="border px-4 py-3">Nearest Site ${n}</th><th class="border px-4 py-3">Distance ${n} (km)</th>`;}
+        resultsTableHeaderRow.innerHTML=headerHTML;
+        results.forEach(row=>{
+            const tr=document.createElement('tr'); tr.classList.add('hover:bg-gray-50');
+            let rowHTML=`<td class="border px-4 py-2 text-center font-medium">${row.siteId}</td>`;
+            for(let n=1;n<=N;n++){
+                const s=row[`Nearest Site ${n}`]||'-';
+                const d=row[`Distance ${n} (km)`]||'-';
+                rowHTML+=`<td class="border px-4 py-2 text-center">${s}</td><td class="border px-4 py-2 text-center text-blue-600 font-semibold">${d}</td>`;
+            }
+            tr.innerHTML=rowHTML; resultsTableBody.appendChild(tr);
+        });
+    }
+
+    processButton.addEventListener('click',()=>{
+        if(siteData.length<2){ updateStatus('Need at least 2 sites to calculate distances.','error'); return; }
+        const N=parseInt(nearestCountInput.value);
+        const siteKey=cboSite.value, latKey=cboLat.value, lonKey=cboLon.value;
+        if(!siteKey||!latKey||!lonKey){ updateStatus('Select correct columns for Site ID, Latitude, Longitude.','error'); return; }
+        if(isNaN(N)||N<1||N>=siteData.length){ updateStatus(`Enter a valid count (1 to ${siteData.length-1}).`,'error'); return; }
+        updateStatus('Calculating nearest neighbors...','info');
+
+        const allResults=[]; let kmlContent=generateKMLHeader();
+        for(let i=0;i<siteData.length;i++){
+            const site1=siteData[i]; const lat1=site1[latKey]; const lon1=site1[lonKey];
+            if(typeof lat1!=='number'||isNaN(lat1)||typeof lon1!=='number'||isNaN(lon1)) continue;
+            const distances=[];
+            for(let j=0;j<siteData.length;j++){ if(i!==j){ const site2=siteData[j]; const lat2=site2[latKey]; const lon2=site2[lonKey]; if(typeof lat2==='number'&&!isNaN(lat2)&&typeof lon2==='number'&&!isNaN(lon2)){ const dist=haversineKm(lat1,lon1,lat2,lon2); distances.push({name:site2[siteKey],lat:lat2,lon:lon2,distance:dist});}}}
+            distances.sort((a,b)=>a.distance-b.distance);
+            const nearestN=distances.slice(0,N);
+            const resultRow={siteId:site1[siteKey]}; let neighbourText="Nearest Neighbours:\n--------------------\n";
+            nearestN.forEach((neighbor,index)=>{ resultRow[`Nearest Site ${index+1}`]=neighbor.name; resultRow[`Distance ${index+1} (km)`]=neighbor.distance.toFixed(3); neighbourText+=`${neighbor.name} (${neighbor.distance.toFixed(3)} km)\n`; kmlContent+=generateKMLLineString(site1[siteKey],lat1,lon1,neighbor.name,neighbor.lat,neighbor.lon,neighbor.distance.toFixed(3));});
+            allResults.push(resultRow); kmlContent+=generateKMLSitePlacemark(site1[siteKey],lat1,lon1,neighbourText);
+        }
+        kmlContent+=generateKMLFooter(); displayResultsTable(allResults,N);
+        updateStatus('Calculation complete. KML file downloaded.','success'); downloadKML(kmlContent);
+    });
+});
+</script>
+
+<script>
+// Show guide page
+document.getElementById('show-guide').addEventListener('click', function(e){
+    e.preventDefault();
+    document.getElementById('calculator-page').style.display = 'none';
+    document.getElementById('guide-page').style.display = 'block';
+});
+
+// Back to calculator
+document.getElementById('back-to-calculator').addEventListener('click', function(){
+    document.getElementById('guide-page').style.display = 'none';
+    document.getElementById('calculator-page').style.display = 'block';
+});
+</script>
+
+</body>
+</html>
