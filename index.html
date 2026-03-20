@@ -529,6 +529,39 @@
         .portfolio-link svg {
             color: var(--accent);
         }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 100%;
+            }
+            .sidebar {
+                width: 100%;
+                z-index: 3000; /* Above everything */
+            }
+            .main-content {
+                left: 0 !important;
+            }
+            .sidebar-header, .panel {
+                padding: 16px;
+            }
+            .main-header {
+                padding: 0 12px;
+                gap: 8px;
+            }
+            .map-legend {
+                bottom: 12px;
+                right: 12px;
+                left: 12px;
+                max-width: none;
+                width: auto;
+                max-height: 150px;
+            }
+            .layer-switcher {
+                top: 60px; /* Below header */
+                right: 12px;
+            }
+        }
     </style>
 </head>
 <body>
